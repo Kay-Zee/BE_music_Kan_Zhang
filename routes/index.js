@@ -45,33 +45,52 @@ exports.recommend = function(db){
 						}
 					}
 				}
-				//var genres=[];
-				var queryGenres =[];
-				for (var tag in rankings){
-					//genres.push	({count:rankings[tag],genre:tag});
-					queryGenres.push(tag);
-				}
-				/*
-				genres.sort(function(a,b){
-					return b.count - a.count;
-				});
-				*/
-				
-				console.log(queryGenres);
-				console.log(rankings);
-				//console.log(genres);
-				
-				musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
+				GetGenreRankings(err);
 			});
 			
-			var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
-				
-				//console.log(items);
-			});
+
 			
 		};
-		function GetGenreRankings(err, items){
-			
+		function GetGenreRankings(err){
+			var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
+				// Generate set of music that users followees have listened to
+				var followeeListenedMusic = {};
+				for (var i = 0; i< items.length; i++){
+					for (var j = 0; j< items[i].listened.length; j++){
+						followeeListenedMusic[items[i].listened[i]]=true;
+					}
+				}
+				var musics = [];
+				for (var key in followeeListenedMusic){
+					musics.push(key);
+				}
+			        
+				console.log(items);
+				// Modify rankings based on the music the users followees have listened to
+				// Note that duplicate music does not increase score given. i.e. if both a and b lisened to m1, the genres in m1 only gets counted once
+				// To count songs more than once, another layer of loop has to be added to traverse each followee's songs
+				musicColl.find({_id: {$in:musics}}).toArray(function(err,items){
+					console.log(items);
+					for (var i = 0; i<items.length; i++){
+						for (var j = 0; j<items[i].tags.length; j++){
+							if (rankings[items[i].tags[j]]){
+								rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + scoreLevel2;
+							} else {
+								rankings[items[i].tags[j]] = scoreLevel2;
+							}
+						}
+					}
+					
+					// Find all songs with relevant genres, and then pass them to RankMusics
+					var queryGenres =[];
+					for (var tag in rankings){
+						queryGenres.push(tag);
+					}
+					
+					musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
+				});
+				
+			});
 			
 		};
 		function RankMusics(err, items){
