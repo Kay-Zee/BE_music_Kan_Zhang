@@ -10,6 +10,7 @@ var http = require('http');
 var path = require('path');
 var fs = require('fs');
 
+
 // Mongo DB
 var MongoClient = require('mongodb').MongoClient;
 
@@ -18,8 +19,21 @@ MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, db) {
   if(!err) {
     console.log("We are connected");
     
+    db.dropCollection('musics');
+    var collection = db.collection('musics');
+    // Read Music collection from json file on server start up
+    var content = fs.readFileSync('./data/musics.json');
+    var musics = JSON.parse(content);
+    // Insert all music into database with the ID as _id and the tag array as tags
+    for (var key in musics) {
+    	var doc = {'_id':key, 'tags':musics[key]};
+    	collection.insert(doc, {w:1}, function(err, result) {});
+    }
+    console.log(musics);
+
+    console.log("musics.json read into db");
   } else {
-	console.log("Error connecting to mongoDB"); 
+	console.log("Error connecting to mongoDB");
   }
 });
 
