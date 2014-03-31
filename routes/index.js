@@ -53,7 +53,6 @@ exports.recommend = function(db){
 				});
 				console.log(rankings);
 				console.log(genres);
-				RankMusics()
 			});
 			
 			var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
