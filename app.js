@@ -40,6 +40,7 @@ app.get('/users', user.list);
 
 //Connect to the db
 var db;
+var server;
 MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, database) {
 	  if(!err) {
 	    console.log("We are connected");
@@ -58,7 +59,7 @@ MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, datab
 
 	    console.log("musics.json read into db");
 	    //db.close();
-	    http.createServer(app).listen(app.get('port'), function(){
+	    server = http.createServer(app).listen(app.get('port'), function(){
 	    	  console.log('Express server listening on port ' + app.get('port'));
 	    	});
 	    
@@ -66,8 +67,27 @@ MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, datab
 	    app.get('/recommendations', routes.recommend(db));
 	    app.post('/follow', routes.follow(db));
 	    app.post('/listen', routes.listen(db));
+	    
+	    process.on('SIGINT', cleanup);
+	    process.on('SIGTERM', cleanup);
 	  } else {
 		console.log("Error connecting to mongoDB");
 	  }
 	});
+
+
+function cleanup () {
+	server._connections=0;
+    server.close(function () {
+        console.log("Closed out remaining connections.");
+        db.close();
+        process.exit();
+    });
+
+    setTimeout( function () {
+        console.error("Could not close connections in time, forcing shut down");
+        process.exit(1);
+    }, 30*1000);
+}
+
 

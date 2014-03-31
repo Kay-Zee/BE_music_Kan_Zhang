@@ -9,7 +9,11 @@ exports.index = function(req, res){
 
 exports.recommend = function(db){
 	return function(req, res){
-		res.render('index', { title: 'Recommendations' });
+		
+		
+		res.render('recommendations', { title: 'Recommendations' });
+		
+		
 	};
 };
 
@@ -18,12 +22,12 @@ exports.follow = function(db){
 	return function(req, res){
 		res.render('post', { title: 'Follow', content: req.body.content});
 		var follow = JSON.parse(req.body.content);
-		var collection = db.collection('following');
+		var followColl = db.collection('following');
 		// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 		// 	add only if it does not already exist
 		for (var i=0; i<follow.operations.length; i++){
 			console.log (follow.operations[i]);
-		    collection.update({_id:follow['operations'][i][0]}, {$addToSet:{following:[follow['operations'][i][1]]}},  {upsert:true}, function(err, result) {});
+			followColl.update({_id:follow.operations[i][0]}, {$addToSet:{following:[follow.operations[i][1]]}},  {upsert:true}, function(err, result) {});
 
 		}
 	};
@@ -33,5 +37,13 @@ exports.follow = function(db){
 exports.listen = function(db){
 	return function(req, res){
 		res.render('post', { title: 'Listen', content: req.body.content });
+		var listen = JSON.parse(req.body.content);
+		var listenColl = db.collection('listen');
+		// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
+		// 	add only if it does not already exist
+		for (var key in listen.userIds){
+			listenColl.update({_id:key}, {$addToSet:{listened:{$each:listen.userIds[key]}}},  {upsert:true}, function(err, result) {});
+
+		}
 	};
 };
