@@ -14,28 +14,6 @@ var fs = require('fs');
 // Mongo DB
 var MongoClient = require('mongodb').MongoClient;
 
-//Connect to the db
-MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, db) {
-  if(!err) {
-    console.log("We are connected");
-    
-    db.dropCollection('musics');
-    var collection = db.collection('musics');
-    // Read Music collection from json file on server start up
-    var content = fs.readFileSync('./data/musics.json');
-    var musics = JSON.parse(content);
-    // Insert all music into database with the ID as _id and the tag array as tags
-    for (var key in musics) {
-    	var doc = {'_id':key, 'tags':musics[key]};
-    	collection.insert(doc, {w:1}, function(err, result) {});
-    }
-    console.log(musics);
-
-    console.log("musics.json read into db");
-  } else {
-	console.log("Error connecting to mongoDB");
-  }
-});
 
 var app = express();
 
@@ -59,11 +37,37 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 app.get('/users', user.list);
 
-// Added functionality for client
-app.get('/recommendations', routes.recommend);
-app.post('/follow', routes.follow);
-app.post('/listen', routes.listen);
 
-http.createServer(app).listen(app.get('port'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
-});
+//Connect to the db
+var db;
+MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, database) {
+	  if(!err) {
+	    console.log("We are connected");
+	    db = database;
+	    db.dropCollection('musics');
+	    var collection = db.collection('musics');
+	    // Read Music collection from json file on server start up
+	    var content = fs.readFileSync('./data/musics.json');
+	    var musics = JSON.parse(content);
+	    // Insert all music into database with the ID as _id and the tag array as tags
+	    for (var key in musics) {
+	    	var doc = {'_id':key, 'tags':musics[key]};
+	    	collection.insert(doc, {w:1}, function(err, result) {});
+	    }
+	    console.log(musics);
+
+	    console.log("musics.json read into db");
+	    //db.close();
+	    http.createServer(app).listen(app.get('port'), function(){
+	    	  console.log('Express server listening on port ' + app.get('port'));
+	    	});
+	    
+	 // Added functionality for client
+	    app.get('/recommendations', routes.recommend(db));
+	    app.post('/follow', routes.follow(db));
+	    app.post('/listen', routes.listen(db));
+	  } else {
+		console.log("Error connecting to mongoDB");
+	  }
+	});
+
