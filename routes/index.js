@@ -17,6 +17,7 @@ exports.recommend = function(db){
 	return function(req, res){
 		var user = req.query.user;
 		var rankings = {};
+		var recommendedMusics = [];
 		console.log(user);
 		var followColl = db.collection(followingCollectionName);
 		var musicColl = db.collection(musicCollectionName);
@@ -44,20 +45,28 @@ exports.recommend = function(db){
 						}
 					}
 				}
-				var genres=[];
+				//var genres=[];
+				var queryGenres =[];
 				for (var tag in rankings){
-					genres.push	({count:rankings[tag],genre:tag});
+					//genres.push	({count:rankings[tag],genre:tag});
+					queryGenres.push(tag);
 				}
+				/*
 				genres.sort(function(a,b){
 					return b.count - a.count;
 				});
+				*/
+				
+				console.log(queryGenres);
 				console.log(rankings);
-				console.log(genres);
+				//console.log(genres);
+				
+				musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
 			});
 			
 			var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
 				
-				console.log(items);
+				//console.log(items);
 			});
 			
 		};
@@ -65,13 +74,62 @@ exports.recommend = function(db){
 			
 			
 		};
-		function RankMusics(err, item){
-
+		function RankMusics(err, items){
+			if(!err){
+				//console.log(items);
+				
+				for (var i = 0; i<items.length; i++){
+					var currentMusic = {_id:items[i]._id,score:0};
+					for (var j = 0; j< items[i].tags.length; j++){
+						if (rankings[items[i].tags[j]]){
+							currentMusic.score +=  rankings[items[i].tags[j]];
+						}
+						
+					}
+					
+					InsertIntoSorted(recommendedMusics,currentMusic);
+					//recommendedMusics.push(currentMusic);
+				}
+			}
+			
+			console.log (recommendedMusics);
+			res.render('recommendations', { title: 'Recommendations', content:""});
 			
 		};
+		function InsertIntoSorted(recommendedMusics, currentMusic){
+			if (false){
+				
+			} else if (recommendedMusics.length==0){
+				recommendedMusics.push(currentMusic);
+			} else {
+				var index = -1;
+				for (var i = 0; i<recommendedMusics.length;i++){
+					if (currentMusic.score>recommendedMusics[i].score && index < 0){
+						index = i;
+					}
+				}
+				// Inserts into a sorted list based on score
+				if (index == 0){
+					// If new music has largest score, insert into front
+					recommendedMusics.unshift(currentMusic);
+				} else if (index>0){
+					// Otherwise, splice into correct position
+					recommendedMusics.splice((index), 0, currentMusic);
+				} else if (recommendedMusics.length<5){
+					// If element was not bigger than any already in array, push onto end if array length < 5
+					recommendedMusics.push(currentMusic);
+				}
+			}
+			// If array has been inserted into, it may be larger than the needed 5. Pop off unecessary element
+			if (recommendedMusics.length>5){
+				recommendedMusics.pop();
+			}
+		};
+		
+		
 
 		
-		res.render('recommendations', { title: 'Recommendations', content:""});
+		//res.render('recommendations', { title: 'Recommendations', content:""});
 		
 		
 	};
