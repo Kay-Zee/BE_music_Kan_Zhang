@@ -59,6 +59,11 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 app.get('/users', user.list);
 
+// Added functionality for client
+app.get('/recommendations', routes.recommend);
+app.post('/follow', routes.follow);
+app.post('/listen', routes.listen);
+
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
