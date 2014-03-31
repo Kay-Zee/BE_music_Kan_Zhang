@@ -97,9 +97,11 @@ exports.recommend = function(db){
 			
 		};
 		function InsertIntoSorted(recommendedMusics, currentMusic){
-			if (false){
-				
+			if (ListContains(userMusic.listened, currentMusic._id)){
+				// If user has heard song already, do not add to recommendations
+				return false;
 			} else if (recommendedMusics.length==0){
+				// Add if list is empty and user has not listened to music before 
 				recommendedMusics.push(currentMusic);
 			} else {
 				var index = -1;
@@ -118,14 +120,28 @@ exports.recommend = function(db){
 				} else if (recommendedMusics.length<5){
 					// If element was not bigger than any already in array, push onto end if array length < 5
 					recommendedMusics.push(currentMusic);
+				} else {
+					return false;
 				}
 			}
 			// If array has been inserted into, it may be larger than the needed 5. Pop off unecessary element
 			if (recommendedMusics.length>5){
 				recommendedMusics.pop();
 			}
+			return true;
 		};
 		
+		/*
+		 * Check if list contains obj
+		 */
+		function ListContains(list, obj){
+			for (var i = 0; i < list.length; i++) {
+		        if (list[i] === obj) {
+		            return true;
+		        }
+		    }
+		    return false;
+		};
 		
 
 		
