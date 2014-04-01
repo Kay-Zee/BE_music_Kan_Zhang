@@ -156,14 +156,30 @@ exports.recommend = function(db){
 							}
 							console.log ("Recommened Musics:");
 							console.log (recommendedMusics);
-							res.render('recommendations', { title: 'Recommendations', content:""});
+							var musicList = [];
+							for (var i = 0; i<recommendedMusics.length; i++){
+								musicList.push(recommendedMusics[i]._id);
+							}
+							console.log (musicList);
+							res.statusCode=200;
+							res.header('Access-Control-Allow-Origin', '*');
+							res.setHeader("Content-Type", "application/json");
+							res.end(JSON.stringify({list:musicList}));
 						});
 					});
 					
 				} else {
 					console.log ("Recommened Musics:");
 					console.log (recommendedMusics);
-					res.render('recommendations', { title: 'Recommendations', content:""});
+					var musicList = [];
+					for (var i = 0; i<recommendedMusics.length; i++){
+						musicList.push(recommendedMusics[i]._id);
+					}
+					console.log (musicList);
+					res.statusCode=200;
+					res.header('Access-Control-Allow-Origin', '*');
+					res.setHeader("Content-Type", "application/json");
+					res.end(JSON.stringify({list:musicList}));
 				}
 			}
 		}
@@ -235,11 +251,13 @@ exports.recommend = function(db){
  */
 exports.follow = function(db){
 	return function(req, res){
+		res.statusCode=200;
 		res.header('Access-Control-Allow-Origin', '*');
-		res.render('post', { title: 'Follow', content: req.body.content});
+		res.setHeader("Content-Type", "application/json");
+		console.log(req.body);
 		// Try to parse and store
 		try{
-			var follow = JSON.parse(req.body.content);
+			var follow = req.body;//JSON.parse(req.body.content);
 			var followColl = db.collection(followingCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 			
@@ -250,6 +268,7 @@ exports.follow = function(db){
 		} catch(e){
 			console.log(e);
 		}
+		res.end('Recieved follow command with JSON:' + JSON.stringify(follow)+'\n');
 	};
 };
 
@@ -264,9 +283,11 @@ exports.listen = function(db){
 		res.setHeader("Content-Type", "application/json");
 		
 		//res.render('post', { title: 'Listen', content: req.body.content });
+		console.log(req.body);
 		// Try to parse and store
+
 		try{
-			var listen = JSON.parse(req.body.content);
+			var listen = req.body;//JSON.parse(req.body);
 			var listenColl = db.collection(listenCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 			// 	add only if it does not already exist
@@ -277,6 +298,6 @@ exports.listen = function(db){
 		} catch (e){
 			console.log(e);
 		}
-		res.end('Executing listen command with json\n');
+		res.end('Recieved listen command with JSON:' + JSON.stringify(listen)+'\n');
 	};
 };
