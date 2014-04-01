@@ -17,6 +17,8 @@ var musicCollectionName = 'musics';
 var scoreLevel1 = 10;
 var scoreLevel2 = 5;
 
+var printToConsole = true;
+
 exports.index = function(req, res){
   res.render('index', { title: 'Express' });
 };
@@ -39,7 +41,8 @@ exports.recommend = function(db){
 			res.render('recommendations', { title: 'Recommendations', content:"Did not specify a user"});
 			return false;
 		}
-		console.log(user);
+		if (printToConsole)
+			console.log(user);
 		// If user exists, initialize variables
 		var rankings = {};
 		var recommendedMusics = [];
@@ -53,7 +56,8 @@ exports.recommend = function(db){
 		
 		// Get all users that the current user is following
 		followColl.findOne({_id:user}, function (err, item){
-			console.log(item);
+			if (printToConsole)
+				console.log(item);
 			
 			userFollowing = item;
 			
@@ -64,12 +68,14 @@ exports.recommend = function(db){
 		// Gets all musics that user has listened to, and then gives a score to the tags of those songs
 		function GetMusics(err, item){
 			userMusic = item;
-			console.log(userMusic);
+			if (printToConsole)
+				console.log(userMusic);
 			// Check that there is no error, and that the user actually exists
 			if (!err && item){
 				// Retrieving all songs user has listened to
 				var userListened = musicColl.find({_id: {$in:userMusic.listened}}).toArray(function(err,items){
-					console.log(items);
+					if (printToConsole)
+						console.log(items);
 					// Assign rank/score to the items, users scoreLevel1 since it is the songs user has listened to
 					for (var i = 0; i<items.length; i++){
 						for (var j = 0; j<items[i].tags.length; j++){
@@ -107,13 +113,14 @@ exports.recommend = function(db){
 					for (var key in followeeListenedMusic){
 						musics.push(key);
 					}
-					
-					console.log(items);
+					if (printToConsole)
+						console.log(items);
 					// Modify rankings based on the music the users followees have listened to
 					// Note that duplicate music does not increase score given. i.e. if both a and b lisened to m1, the genres in m1 only gets counted once
 					// To count songs more than once, another layer of loop has to be added to traverse each followee's songs
 					musicColl.find({_id: {$in:musics}}).toArray(function(err,items){
-						console.log(items);
+						if (printToConsole)
+							console.log(items);
 						for (var i = 0; i<items.length; i++){
 							for (var j = 0; j<items[i].tags.length; j++){
 								if (rankings[items[i].tags[j]]){
@@ -175,13 +182,16 @@ exports.recommend = function(db){
 								var currentMusic = {_id:items[i]._id,score:0};
 								recommendedMusics.push(currentMusic);
 							}
-							console.log ("Recommened Musics:");
-							console.log (recommendedMusics);
+							if (printToConsole){
+								console.log ("Recommened Musics:");
+								console.log (recommendedMusics);
+							}
 							var musicList = [];
 							for (var i = 0; i<recommendedMusics.length; i++){
 								musicList.push(recommendedMusics[i]._id);
 							}
-							console.log (musicList);
+							if (printToConsole)
+								console.log (musicList);
 							res.statusCode=200;
 							res.setHeader("Content-Type", "application/json");
 							res.end(JSON.stringify({list:musicList}));
@@ -190,13 +200,16 @@ exports.recommend = function(db){
 					
 				} else {
 					// If there are enough songs, simply return list in proper format
-					console.log ("Recommened Musics:");
-					console.log (recommendedMusics);
+					if (printToConsole){
+						console.log ("Recommened Musics:");
+						console.log (recommendedMusics);
+					}
 					var musicList = [];
 					for (var i = 0; i<recommendedMusics.length; i++){
 						musicList.push(recommendedMusics[i]._id);
 					}
-					console.log (musicList);
+					if (printToConsole)
+						console.log (musicList);
 					res.statusCode=200;
 					res.setHeader("Content-Type", "application/json");
 					res.end(JSON.stringify({list:musicList}));
@@ -207,6 +220,7 @@ exports.recommend = function(db){
 		/*
 		 * Insert into a sorted array songs
 		 *  Helper function, only keeps 5 items with the highest score, sorted
+		 *  Returns true if item is inserted and false otherwise
 		 */
 		function InsertIntoSorted(recommendedMusics, currentMusic){
 			if (ListContains(userMusic.listened, currentMusic._id)){
@@ -217,6 +231,7 @@ exports.recommend = function(db){
 				recommendedMusics.push(currentMusic);
 			} else {
 				var index = -1;
+				// Could consider changing this to a while loop, to decrease total number of iterations
 				for (var i = 0; i<recommendedMusics.length;i++){
 					if (currentMusic.score>recommendedMusics[i].score && index < 0){
 						index = i;
@@ -246,6 +261,7 @@ exports.recommend = function(db){
 		/*
 		 * Check if list contains obj
 		 *  Helper Function
+		 *  Returns true if item is found, false otherwise
 		 */
 		function ListContains(list, obj){
 			for (var i = 0; i < list.length; i++) {
@@ -275,16 +291,22 @@ exports.follow = function(db){
 	return function(req, res){
 		// Define response
 		res.setHeader("Content-Type", "application/json");
-		console.log(req.body);
+		if (printToConsole)
+			console.log(req.body);
 		// Try to parse and store
 		var follow;
+		// Try catch block for when I had to parse the request body, but should now be done by express
 		try{
 			follow = req.body;//JSON.parse(req.body.content);
 			var followColl = db.collection(followingCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 			
 			if (follow.from && follow.to){
-				followColl.update({_id:follow.from}, {$addToSet:{following:follow.to}},  {upsert:true}, function(err, result) {});
+				followColl.update({_id:follow.from}, {$addToSet:{following:follow.to}},  {upsert:true}, function(err, result) {
+					if (err){
+						console.log(err);
+					}
+				});
 			}
 			res.statusCode=200;
 		} catch(e){
@@ -292,6 +314,7 @@ exports.follow = function(db){
 			res.statusCode=500;
 			console.log(e);
 		}
+		// Finish creating response
 		res.end('Recieved follow command with JSON:' + JSON.stringify(follow)+'\n');
 	};
 };
@@ -309,17 +332,22 @@ exports.listen = function(db){
 		res.header('Access-Control-Allow-Origin', '*');
 		res.setHeader("Content-Type", "application/json");
 		
-		//res.render('post', { title: 'Listen', content: req.body.content });
-		console.log(req.body);
+		if (printToConsole)
+			console.log(req.body);
 		// Try to parse and store
 		var listen;
+		// Try catch block for when I had to parse the request body, but should now be done by express
 		try{
-			listen = req.body;//JSON.parse(req.body);
+			listen = req.body; //JSON.parse(req.body);
 			var listenColl = db.collection(listenCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 			//  add only if it does not already exist
 			if (listen.user && listen.music){
-				listenColl.update({_id:listen.user}, {$addToSet:{listened:listen.music}},  {upsert:true}, function(err, result) {});
+				listenColl.update({_id:listen.user}, {$addToSet:{listened:listen.music}},  {upsert:true}, function(err, result) {
+					if (err){
+						console.log(err);
+					}
+				});
 			}
 			res.statusCode=200;
 		} catch (e){
@@ -327,6 +355,7 @@ exports.listen = function(db){
 			console.log(e);
 			res.statusCode=500;
 		}
+		// Finish creating response
 		res.end('Recieved listen command with JSON:' + JSON.stringify(listen)+'\n');
 	};
 };

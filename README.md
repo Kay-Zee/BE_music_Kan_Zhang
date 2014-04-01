@@ -44,13 +44,22 @@ the default address should be
 - http://localhost:3000/
 
 
-Also included is a script file, script.js, in the text folder, that is meant to be run with Mocha.
+Also included is a script file, script.js, in the test folder, that is meant to be run with Mocha.
 
 Suggested command is 
 
 #####`$ mocha script.js`
 
 Must be in the test folder to run this.
+
+#### NOTE
+
+Currently, a lot of feedback is printed to the console. To turn this off, simply change 
+
+`var printToConsole = false`
+
+in index.js
+
 
 ## Developing
 
@@ -59,6 +68,8 @@ Must be in the test folder to run this.
 ### Tools
 
 Uses Node.js with Express.js connecting to a mongo database
+
+Using Mocha for the script to feed the required info into the endpoints
 
 
 Created with [Nodeclipse](https://github.com/Nodeclipse/nodeclipse-1)

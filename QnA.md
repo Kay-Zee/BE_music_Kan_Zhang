@@ -45,7 +45,7 @@ Picking out all songs that match a the users "tags" and then ranking them, since
 
 What was the hardest part?
 >
-Efficiently implementing my algorithm in new environment. While I had a good idea of the algorithm I wanted to implement, I did not want to implement a crude version just because of my unfamiliarity with the tech-stack, so I had to take extra diligence with my implementation.
+Efficiently implementing my algorithm in a new environment. While I had a good idea of the algorithm I wanted to implement, I did not want to implement a crude version just because of my unfamiliarity with the tech-stack, so I had to take extra diligence with my implementation.
 
 Did you learn something new?
 > 
