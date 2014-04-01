@@ -107,21 +107,26 @@ exports.recommend = function(db){
 					var followeeListenedMusic = {};
 					for (var i = 0; i< items.length; i++){
 						for (var j = 0; j< items[i].listened.length; j++){
-							followeeListenedMusic[items[i].listened[i]]=true;
+							followeeListenedMusic[items[i].listened[j]]=true;
 						}
 					}
 					var musics = [];
 					for (var key in followeeListenedMusic){
 						musics.push(key);
 					}
-					if (printToConsole)
+					if (printToConsole){
+						console.log("Music listened by Followees");
 						console.log(items);
+						console.log(musics);
+					}
 					// Modify rankings based on the music the users followees have listened to
 					// Note that duplicate music does not increase score given. i.e. if both a and b lisened to m1, the genres in m1 only gets counted once
 					// To count songs more than once, another layer of loop has to be added to traverse each followee's songs
 					musicColl.find({_id: {$in:musics}}).toArray(function(err,items){
-						if (printToConsole)
+						if (printToConsole){
+							console.log("All Music Listened to by Followees and their tags");
 							console.log(items);
+						}
 						for (var i = 0; i<items.length; i++){
 							for (var j = 0; j<items[i].tags.length; j++){
 								if (rankings[items[i].tags[j]]){
@@ -184,7 +189,7 @@ exports.recommend = function(db){
 								recommendedMusics.push(currentMusic);
 							}
 							if (printToConsole){
-								console.log ("Recommened Musics:");
+								console.log ("Recommended Musics:");
 								console.log (recommendedMusics);
 							}
 							var musicList = [];
@@ -202,7 +207,7 @@ exports.recommend = function(db){
 				} else {
 					// If there are enough songs, simply return list in proper format
 					if (printToConsole){
-						console.log ("Recommened Musics:");
+						console.log ("Recommended Musics:");
 						console.log (recommendedMusics);
 					}
 					var musicList = [];
