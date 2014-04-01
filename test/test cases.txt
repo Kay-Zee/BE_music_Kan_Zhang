@@ -4,19 +4,19 @@ OK - Check for/catch exceptions of malformed JSON
 OK - User that has listened to no songs, and follows nobody 
 
 Follow Command
-- Check that follow operation has at least two element
-- Follow a user that does not yet exist
-- User has not followed anyone
+OK - Check that follow operation has at least two element
+OK - Follow a user that does not yet exist
+OK - User has not followed anyone
 
 
 Listen Command
-- User with empty listen array
-- User listen with song not in database
-- 
+OK - User with empty listen array
+OK - User listen with song not in database
+
 
 Recommend Command
-- grab recommendation of user that does not yet exist
-- grab recommendation of user that follows no one
-- grab recommendation of user that has listened to nothing
-- grab recommendation of user that follows no one and has listened to nothing
-- Test queries
+OK - grab recommendation of user that does not yet exist
+OK - grab recommendation of user that follows no one
+OK - grab recommendation of user that has listened to nothing
+OK - grab recommendation of user that follows no one and has listened to nothing
+OK - Test GET queries

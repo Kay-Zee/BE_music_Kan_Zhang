@@ -19,6 +19,11 @@ exports.index = function(req, res){
 exports.recommend = function(db){
 	return function(req, res){
 		var user = req.query.user;
+		if (!user){
+			// Was considering returning 5 random songs here
+			res.render('recommendations', { title: 'Recommendations', content:"Did not specify a user"});
+			return false;
+		}
 		var rankings = {};
 		var recommendedMusics = [];
 		console.log(user);
@@ -40,22 +45,28 @@ exports.recommend = function(db){
 		function GetMusics(err, item){
 			userMusic = item;
 			console.log(userMusic);
-			// Retrieving all songs user has listened to
-			var userListened = musicColl.find({_id: {$in:userMusic.listened}}).toArray(function(err,items){
-				console.log(items);
-				// Assign rank/score to the items, users scoreLevel1 since it is the songs user has listened to
-				for (var i = 0; i<items.length; i++){
-					for (var j = 0; j<items[i].tags.length; j++){
-						if (rankings[items[i].tags[j]]){
-							rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + scoreLevel1;
-						} else {
-							rankings[items[i].tags[j]] = scoreLevel1;
+			// Check that there is no error, and that the user actually exists
+			if (!err && item){
+				// Retrieving all songs user has listened to
+				var userListened = musicColl.find({_id: {$in:userMusic.listened}}).toArray(function(err,items){
+					console.log(items);
+					// Assign rank/score to the items, users scoreLevel1 since it is the songs user has listened to
+					for (var i = 0; i<items.length; i++){
+						for (var j = 0; j<items[i].tags.length; j++){
+							if (rankings[items[i].tags[j]]){
+								rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + scoreLevel1;
+							} else {
+								rankings[items[i].tags[j]] = scoreLevel1;
+							}
 						}
 					}
-				}
-				GetGenreRankings(err);
-			});
-			
+					GetGenreRankings(err);
+				});
+			} else {
+				// Was considering returning 5 random songs here
+				res.render('recommendations', { title: 'Recommendations', content:"User Does Not Exist"});
+				return false;
+			}
 
 			
 		}
