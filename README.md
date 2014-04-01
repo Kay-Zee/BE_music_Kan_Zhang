@@ -29,13 +29,13 @@ Query string has:
 
 To start the server, simply move to the BE_music_Kan_Zhang folder (if you're not there already) and use the following
 
-#####'$ node app.js'
+#####`$ node app.js`
 
 Also included is a script file, script.js, in the text folder, that is meant to be run with Mocha.
 
 Suggested command is 
 
-#####'$ mocha script.js'
+#####`$ mocha script.js`
 
 Must be in the test folder to run this.
 
