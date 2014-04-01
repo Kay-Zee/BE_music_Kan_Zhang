@@ -3,9 +3,12 @@
  * GET home page.
  */
 
+// Name of collections
 var followingCollectionName = 'following';
 var listenCollectionName = 'listen';
 var musicCollectionName = 'musics';
+
+// Score values: Level1 = user listened musics, Level2 = followee listened musics
 var scoreLevel1 = 10;
 var scoreLevel2 = 5;
 
@@ -23,19 +26,24 @@ exports.recommend = function(db){
 		var musicColl = db.collection(musicCollectionName);
 		var listenColl = db.collection(listenCollectionName);
 		var userFollowing;
-		followColl.findOne({_id:user}, GetFollowees);
-		function GetFollowees(err, item){
+		var userMusic;
+		// Get all users that the current user is following
+		followColl.findOne({_id:user}, function (err, item){
 			console.log(item);
 			userFollowing = item;
-			var userMusic;
+			
 			listenColl.findOne({_id:user}, GetMusics);
 			
-		};
+		});
+		
+		// Gets all musics that user has listened to, and then gives a score to the tags of those songs
 		function GetMusics(err, item){
 			userMusic = item;
 			console.log(userMusic);
+			// Retrieving all songs user has listened to
 			var userListened = musicColl.find({_id: {$in:userMusic.listened}}).toArray(function(err,items){
 				console.log(items);
+				// Assign rank/score to the items, users scoreLevel1 since it is the songs user has listened to
 				for (var i = 0; i<items.length; i++){
 					for (var j = 0; j<items[i].tags.length; j++){
 						if (rankings[items[i].tags[j]]){
@@ -50,71 +58,108 @@ exports.recommend = function(db){
 			
 
 			
-		};
+		}
+		// Gives rankings to the tags based on who the user is following, and then finds all songs corrosponding to those tags
 		function GetGenreRankings(err){
-			var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
-				// Generate set of music that users followees have listened to
-				var followeeListenedMusic = {};
-				for (var i = 0; i< items.length; i++){
-					for (var j = 0; j< items[i].listened.length; j++){
-						followeeListenedMusic[items[i].listened[i]]=true;
-					}
-				}
-				var musics = [];
-				for (var key in followeeListenedMusic){
-					musics.push(key);
-				}
-			        
-				console.log(items);
-				// Modify rankings based on the music the users followees have listened to
-				// Note that duplicate music does not increase score given. i.e. if both a and b lisened to m1, the genres in m1 only gets counted once
-				// To count songs more than once, another layer of loop has to be added to traverse each followee's songs
-				musicColl.find({_id: {$in:musics}}).toArray(function(err,items){
-					console.log(items);
-					for (var i = 0; i<items.length; i++){
-						for (var j = 0; j<items[i].tags.length; j++){
-							if (rankings[items[i].tags[j]]){
-								rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + scoreLevel2;
-							} else {
-								rankings[items[i].tags[j]] = scoreLevel2;
-							}
+			// Check if the user is following anyone
+			if (userFollowing){
+				var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
+					// Generate set of music that users followees have listened to
+					var followeeListenedMusic = {};
+					for (var i = 0; i< items.length; i++){
+						for (var j = 0; j< items[i].listened.length; j++){
+							followeeListenedMusic[items[i].listened[i]]=true;
 						}
 					}
-					
-					// Find all songs with relevant genres, and then pass them to RankMusics
-					var queryGenres =[];
-					for (var tag in rankings){
-						queryGenres.push(tag);
+					var musics = [];
+					for (var key in followeeListenedMusic){
+						musics.push(key);
 					}
 					
-					musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
+					console.log(items);
+					// Modify rankings based on the music the users followees have listened to
+					// Note that duplicate music does not increase score given. i.e. if both a and b lisened to m1, the genres in m1 only gets counted once
+					// To count songs more than once, another layer of loop has to be added to traverse each followee's songs
+					musicColl.find({_id: {$in:musics}}).toArray(function(err,items){
+						console.log(items);
+						for (var i = 0; i<items.length; i++){
+							for (var j = 0; j<items[i].tags.length; j++){
+								if (rankings[items[i].tags[j]]){
+									rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + scoreLevel2;
+								} else {
+									rankings[items[i].tags[j]] = scoreLevel2;
+								}
+							}
+						}
+						
+						// Find all songs with relevant genres, and then pass them to RankMusics
+						var queryGenres =[];
+						for (var tag in rankings){
+							queryGenres.push(tag);
+						}
+						
+						musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
+					});
+					
 				});
+			} else {
+				// If the user has no followees, rank music without looking up followees 
+				var queryGenres =[];
+				for (var tag in rankings){
+					queryGenres.push(tag);
+				}
 				
-			});
+				musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
+			}
 			
-		};
+		}
+		
 		function RankMusics(err, items){
 			if(!err){
 				//console.log(items);
 				
+				// Give score value to each music
 				for (var i = 0; i<items.length; i++){
 					var currentMusic = {_id:items[i]._id,score:0};
 					for (var j = 0; j< items[i].tags.length; j++){
 						if (rankings[items[i].tags[j]]){
 							currentMusic.score +=  rankings[items[i].tags[j]];
 						}
-						
 					}
 					
+					// Insert into a sorted array,
 					InsertIntoSorted(recommendedMusics,currentMusic);
 					//recommendedMusics.push(currentMusic);
 				}
+				// If after the algorithm, not enough songs have been added to the list, randomly add songs
+				if (recommendedMusics.length<5){
+					
+					musicColl.count(function(err, count){
+						
+						var randMusics = musicColl.find().limit( 5 - recommendedMusics.length ).skip( Math.random() * (count-(5 - recommendedMusics.length)) ).toArray(function(err, items){
+							// Match formatting of other musics, and add to list
+							for (var i = 0; i<items.length; i++){
+								var currentMusic = {_id:items[i]._id,score:0};
+								recommendedMusics.push(currentMusic);
+							}
+							console.log ("Recommened Musics:");
+							console.log (recommendedMusics);
+							res.render('recommendations', { title: 'Recommendations', content:""});
+						});
+					});
+					
+				} else {
+					console.log ("Recommened Musics:");
+					console.log (recommendedMusics);
+					res.render('recommendations', { title: 'Recommendations', content:""});
+				}
 			}
-			
-			console.log (recommendedMusics);
-			res.render('recommendations', { title: 'Recommendations', content:""});
-			
-		};
+		}
+		
+		/*
+		 * Insert into a sorted array songs
+		 *  Helper function, only keeps 5 items with the highest score, sorted
+		 */
 		function InsertIntoSorted(recommendedMusics, currentMusic){
 			if (ListContains(userMusic.listened, currentMusic._id)){
 				// If user has heard song already, do not add to recommendations
@@ -148,19 +193,19 @@ exports.recommend = function(db){
 				recommendedMusics.pop();
 			}
 			return true;
-		};
+		}
 		
 		/*
 		 * Check if list contains obj
 		 */
 		function ListContains(list, obj){
 			for (var i = 0; i < list.length; i++) {
-		        if (list[i] === obj) {
-		            return true;
-		        }
-		    }
-		    return false;
-		};
+				if (list[i] === obj) {
+					return true;
+				}
+			}
+			return false;
+		}
 		
 
 		
@@ -172,33 +217,51 @@ exports.recommend = function(db){
 
 
 
-// Follow command, currently displays the body of post, named content
+/* 
+ * Follow command, currently displays the body of post, named content
+ * 	stores all follow relationships under "operations" into collection
+ */
 exports.follow = function(db){
 	return function(req, res){
 		res.render('post', { title: 'Follow', content: req.body.content});
-		var follow = JSON.parse(req.body.content);
-		var followColl = db.collection(followingCollectionName);
-		// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
-		// 	add only if it does not already exist
-		for (var i=0; i<follow.operations.length; i++){
-			console.log (follow.operations[i]);
-			followColl.update({_id:follow.operations[i][0]}, {$addToSet:{following:follow.operations[i][1]}},  {upsert:true}, function(err, result) {});
-
+		// Try to parse and store
+		try{
+			var follow = JSON.parse(req.body.content);
+			var followColl = db.collection(followingCollectionName);
+			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
+			// 	add only if it does not already exist
+			for (var i=0; i<follow.operations.length; i++){
+				console.log (follow.operations[i]);
+				// Make sure the operation array has at least two elements, assume that element [0] is following element [1]
+				if (follow.operations[i].length>=2){
+					followColl.update({_id:follow.operations[i][0]}, {$addToSet:{following:follow.operations[i][1]}},  {upsert:true}, function(err, result) {});
+				}
+			}
+		} catch(e){
+			console.log(e);
 		}
 	};
 };
 
-//Listen command, currently displays the body of post, named content
+/*
+ * Listen command, currently displays the body of post, named content
+ * 	
+ */
 exports.listen = function(db){
 	return function(req, res){
 		res.render('post', { title: 'Listen', content: req.body.content });
-		var listen = JSON.parse(req.body.content);
-		var listenColl = db.collection(listenCollectionName);
-		// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
-		// 	add only if it does not already exist
-		for (var key in listen.userIds){
-			listenColl.update({_id:key}, {$addToSet:{listened:{$each:listen.userIds[key]}}},  {upsert:true}, function(err, result) {});
-
+		// Try to parse and store
+		try{
+			var listen = JSON.parse(req.body.content);
+			var listenColl = db.collection(listenCollectionName);
+			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
+			// 	add only if it does not already exist
+			for (var key in listen.userIds){
+				listenColl.update({_id:key}, {$addToSet:{listened:{$each:listen.userIds[key]}}},  {upsert:true}, function(err, result) {});
+	
+			}
+		} catch (e){
+			console.log(e);
 		}
 	};
 };
