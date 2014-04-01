@@ -33,15 +33,24 @@ Assume you have more than one implementation of recommendations, how could you t
 
 How long did this assignment take? Please be honest it's relatively new.
 >
+Approximately 3 days, with about 4 hours per day.
+- Day 1 was mostly research on Node.js, Express.js and mongoDB, as well as setup, may have been more than 4 hours
+- Day 2 was writing the server logic and implementing algorithms, approx 5 hours.
+- Day 3 was writing the script and polishing up code, 3-4 hours
 
 Where would be the bottlenecks of this solution you have implemented?
 >
+Picking out all songs that match a the users "tags" and then ranking them, since if the user has listened to many songs, and has many followees, he will have a lot of songs in this category, and even though only 5 needs to be recommended. Each song may also have many tags, which would cause more operations.
+ 
 
 What was the hardest part?
 >
+Efficiently implementing my algorithm in new environment. While I had a good idea of the algorithm I wanted to implement, I did not want to implement a crude version just because of my unfamiliarity with the tech-stack, so I had to take extra diligence with my implementation.
 
 Did you learn something new?
 > 
+Other than getting to experience Node.js, Express.js and mongoDB for the first time, and learning more about Javascript and noSQL databases, I improved my ability to manage asynchronous callbacks thanks to the way callbacks are used in Node.js
 
 Do you feel your skills were under tested?
 >
+I do not feel like this assignment was overly challenging. I believe I would have been able to very quickly finish the assignment if I was more familiar with the tech-stack;
