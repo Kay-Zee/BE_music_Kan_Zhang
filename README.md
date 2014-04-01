@@ -27,10 +27,13 @@ Return 5 music recommendations to this user, sorted by relevance
 Query string has:
 - user: \<user ID\>
 
+#### Running the Database, Server and Script
 mongodb should be started up prior to server startup.
 
 currently using
+
 mongodb://localhost:27017/BE_music_db
+
 As the address, and stored in the data folder
 
 To start the server, simply move to the BE_music_Kan_Zhang folder (if you're not there already) and use the following
@@ -38,6 +41,7 @@ To start the server, simply move to the BE_music_Kan_Zhang folder (if you're not
 #####`$ node app.js`
 
 the default address should be
+
 http://localhost:3000/
 
 Also included is a script file, script.js, in the text folder, that is meant to be run with Mocha.

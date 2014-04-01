@@ -1,6 +1,11 @@
 
 /*
- * GET home page.
+ * BE_music_Kan_Zhang
+ * 
+ * to handle 
+ * GET /recommendations
+ * POST /listen 
+ * POST /follow
  */
 
 // Name of collections
@@ -16,26 +21,40 @@ exports.index = function(req, res){
   res.render('index', { title: 'Express' });
 };
 
+
+/* 
+ * Recommendations command (.../recommendations)
+ * 
+ * Takes a GET command, with the query being
+ * {user:<user ID>}
+ * and returns a list of music in the form
+ * {list:[<music 1 ID>,<music 2 ID>,<music 3 ID>,<music 4 ID>,<music 5 ID>]}
+ */
 exports.recommend = function(db){
 	return function(req, res){
-		res.header('Access-Control-Allow-Origin', '*');
 		var user = req.query.user;
+		// Check if user key exists, if not, return
 		if (!user){
 			// Was considering returning 5 random songs here
 			res.render('recommendations', { title: 'Recommendations', content:"Did not specify a user"});
 			return false;
 		}
+		console.log(user);
+		// If user exists, initialize variables
 		var rankings = {};
 		var recommendedMusics = [];
-		console.log(user);
+		
 		var followColl = db.collection(followingCollectionName);
 		var musicColl = db.collection(musicCollectionName);
 		var listenColl = db.collection(listenCollectionName);
+		
 		var userFollowing;
 		var userMusic;
+		
 		// Get all users that the current user is following
 		followColl.findOne({_id:user}, function (err, item){
 			console.log(item);
+			
 			userFollowing = item;
 			
 			listenColl.findOne({_id:user}, GetMusics);
@@ -61,6 +80,7 @@ exports.recommend = function(db){
 							}
 						}
 					}
+					// Continue assigning rank/score by calling the Genre ranking generation function
 					GetGenreRankings(err);
 				});
 			} else {
@@ -126,6 +146,7 @@ exports.recommend = function(db){
 			
 		}
 		
+		// Ranks all music (items) based on previously calculated rankings of its "tags" or "genres" and inserts them into a sorted list
 		function RankMusics(err, items){
 			if(!err){
 				//console.log(items);
@@ -162,13 +183,13 @@ exports.recommend = function(db){
 							}
 							console.log (musicList);
 							res.statusCode=200;
-							res.header('Access-Control-Allow-Origin', '*');
 							res.setHeader("Content-Type", "application/json");
 							res.end(JSON.stringify({list:musicList}));
 						});
 					});
 					
 				} else {
+					// If there are enough songs, simply return list in proper format
 					console.log ("Recommened Musics:");
 					console.log (recommendedMusics);
 					var musicList = [];
@@ -177,7 +198,6 @@ exports.recommend = function(db){
 					}
 					console.log (musicList);
 					res.statusCode=200;
-					res.header('Access-Control-Allow-Origin', '*');
 					res.setHeader("Content-Type", "application/json");
 					res.end(JSON.stringify({list:musicList}));
 				}
@@ -192,7 +212,7 @@ exports.recommend = function(db){
 			if (ListContains(userMusic.listened, currentMusic._id)){
 				// If user has heard song already, do not add to recommendations
 				return false;
-			} else if (recommendedMusics.length==0){
+			} else if (recommendedMusics.length===0){
 				// Add if list is empty and user has not listened to music before 
 				recommendedMusics.push(currentMusic);
 			} else {
@@ -203,7 +223,7 @@ exports.recommend = function(db){
 					}
 				}
 				// Inserts into a sorted list based on score
-				if (index == 0){
+				if (index === 0){
 					// If new music has largest score, insert into front
 					recommendedMusics.unshift(currentMusic);
 				} else if (index>0){
@@ -225,6 +245,7 @@ exports.recommend = function(db){
 		
 		/*
 		 * Check if list contains obj
+		 *  Helper Function
 		 */
 		function ListContains(list, obj){
 			for (var i = 0; i < list.length; i++) {
@@ -235,9 +256,6 @@ exports.recommend = function(db){
 			return false;
 		}
 		
-
-		
-		//res.render('recommendations', { title: 'Recommendations', content:""});
 		
 		
 	};
@@ -246,26 +264,32 @@ exports.recommend = function(db){
 
 
 /* 
- * Follow command, currently displays the body of post, named content
- * 	stores all follow relationships under "operations" into collection
+ * Follow command (.../follow)
+ * 
+ * Takes a POST command, with the body being
+ * {from:<user 1 ID>, to:<user 2 ID>}
+ * to be interprted as user 1 is now following user 2
+ * and stores into the database (does not duplicate if music id already in database)
  */
 exports.follow = function(db){
 	return function(req, res){
-		res.statusCode=200;
-		res.header('Access-Control-Allow-Origin', '*');
+		// Define response
 		res.setHeader("Content-Type", "application/json");
 		console.log(req.body);
 		// Try to parse and store
+		var follow;
 		try{
-			var follow = req.body;//JSON.parse(req.body.content);
+			follow = req.body;//JSON.parse(req.body.content);
 			var followColl = db.collection(followingCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 			
 			if (follow.from && follow.to){
 				followColl.update({_id:follow.from}, {$addToSet:{following:follow.to}},  {upsert:true}, function(err, result) {});
 			}
-			
+			res.statusCode=200;
 		} catch(e){
+			follow = {error:true};
+			res.statusCode=500;
 			console.log(e);
 		}
 		res.end('Recieved follow command with JSON:' + JSON.stringify(follow)+'\n');
@@ -273,30 +297,35 @@ exports.follow = function(db){
 };
 
 /*
- * Listen command, currently displays the body of post, named content
- * 	
+ * Listen command (.../listen)
+ *
+ * Takes a POST command, with the body being
+ * {user:<user ID>, music:<music ID>}
+ * and stores into the database (does not duplicate if music id already in database)
  */
 exports.listen = function(db){
 	return function(req, res){
-		res.statusCode=200;
+		
 		res.header('Access-Control-Allow-Origin', '*');
 		res.setHeader("Content-Type", "application/json");
 		
 		//res.render('post', { title: 'Listen', content: req.body.content });
 		console.log(req.body);
 		// Try to parse and store
-
+		var listen;
 		try{
-			var listen = req.body;//JSON.parse(req.body);
+			listen = req.body;//JSON.parse(req.body);
 			var listenColl = db.collection(listenCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
-			// 	add only if it does not already exist
+			//  add only if it does not already exist
 			if (listen.user && listen.music){
 				listenColl.update({_id:listen.user}, {$addToSet:{listened:listen.music}},  {upsert:true}, function(err, result) {});
 			}
-			
+			res.statusCode=200;
 		} catch (e){
+			listen = {error:true};
 			console.log(e);
+			res.statusCode=500;
 		}
 		res.end('Recieved listen command with JSON:' + JSON.stringify(listen)+'\n');
 	};
