@@ -20,7 +20,8 @@ var scoreLevel2 = 5;
 var printToConsole = true;
 
 exports.index = function(req, res){
-  res.render('index', { title: 'Express' });
+  res.end(JSON.stringify({
+  title : "Title"}));
 };
 
 
@@ -38,7 +39,7 @@ exports.recommend = function(db){
 		// Check if user key exists, if not, return
 		if (!user){
 			// Was considering returning 5 random songs here
-			res.render('recommendations', { title: 'Recommendations', content:"Did not specify a user"});
+			
 			return false;
 		}
 		if (printToConsole)
@@ -91,7 +92,7 @@ exports.recommend = function(db){
 				});
 			} else {
 				// Was considering returning 5 random songs here
-				res.render('recommendations', { title: 'Recommendations', content:"User Does Not Exist"});
+
 				return false;
 			}
 
