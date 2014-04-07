@@ -50,7 +50,7 @@ MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, datab
   if(!err) {
     console.log("We are connected");
     db = database;
-    db.dropCollection('musics');
+    db.dropDatabase();
     var collection = db.collection('musics');
     // Read Music collection from json file on server start up
     var content = fs.readFileSync('./data/musics.json');
