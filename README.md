@@ -34,6 +34,9 @@ The database is stored in the data folder, and its expected address is
 
 - mongodb://localhost:27017/BE_music_db
 
+You will need to run npm install in the BE_music_Kan_Zhang (root) folder to get all the modules required
+
+#####`$ npm install`
 
 To start the server, simply move to the BE_music_Kan_Zhang folder (if you're not there already) and use the following
 
@@ -67,7 +70,7 @@ in index.js
 
 ### Tools
 
-Uses Node.js with Express.js connecting to a mongo database
+Uses Node.js (v0.10.26) with Express.js connecting to a mongo database
 
 Using Mocha for the script to feed the required info into the endpoints
 
