@@ -7,7 +7,9 @@
  * POST /listen 
  * POST /follow
  */
-
+ 
+var fs = require('fs');
+ 
 // Name of collections
 var followingCollectionName = 'following';
 var listenCollectionName = 'listen';
@@ -366,5 +368,52 @@ exports.listen = function(db){
 		// Finish creating response
 		// Since there was no specified response for this command, I simply echoed the input json
 		res.end(JSON.stringify(listen));
+	};
+};
+
+/*
+ * Resets the database
+ */
+function resetdb(db, callback){
+	db.dropDatabase(function(err, database) {
+		var collection = db.collection('musics');
+		// Read Music collection from json file on server start up
+		var content = fs.readFileSync('./test/musics.json');
+		var musics = JSON.parse(content);
+		// Insert all music into database with the ID as _id and the tag array as tags
+
+		for (var key in musics) {
+		   var doc = {'_id':key, 'tags':musics[key]};
+		   collection.insert(doc, {w:1}, function(err, result) {
+				if (err){
+					console.log(err);
+				}
+			});
+		}
+		console.log(musics);
+
+		console.log("musics.json read into db");
+		callback(err);
+	});
+
+};
+exports.resetdb = resetdb;
+
+/*
+ * Resets the database
+ */
+exports.reset = function(db){
+	return function(req, res){
+		
+		res.setHeader("Content-Type", "application/json");
+		resetdb(db, function(err){
+			if(!err){
+				res.statusCode=200;
+				res.end(JSON.stringify({'status':'ok'}));
+			} else {
+				res.statusCode=500;
+				res.end(JSON.stringify({'status':'error'}));
+			}
+		});
 	};
 };

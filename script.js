@@ -6,7 +6,7 @@ var http = require('http');
 var path = require('path');
 var fs = require('fs');
 
-var app = express();
+var app = require('./app.js');
 var baseURI = 'http://localhost:3000/';
 var options = { method: 'POST'
   , uri: 'http://localhost:3000/'
@@ -22,18 +22,37 @@ var options = { method: 'POST'
 function SendRequest(item, callback){
 	options.json=item;
 	request(options, function(err, res, body){
-		if (!err){
-			console.log(res.statusCode);
-			console.log(body);
-		} else {
-			console.log("NO RESPONSE");
-		}
+		HandleResponse(err, res, body);
 		callback(err);
 	});
 	
 }
 
+/*
+ * HandleResponse
+ * Helper Function for requests
+ * 
+ */
+function HandleResponse(err, res, body){
+	if (!err){
+		console.log(res.statusCode);
+		console.log(body);
+	} else {
+		console.log("NO RESPONSE");
+	}
+}
+
 describe('Fictional MVP', function() {
+  describe('#Reset', function() {
+    it('Resets the database in preperation for the rest of the code', function(done){
+		// Setup Options JSON for the requests to be sent
+		
+		app.resetdb(function(err){
+			done();
+		});
+	});
+	
+  });
   describe('#Listen', function() {
     it('Executes the listen command with the provided JSON', function(done){
 		// Setup Options JSON for the requests to be sent
