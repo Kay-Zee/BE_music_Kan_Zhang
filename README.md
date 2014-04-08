@@ -47,7 +47,9 @@ the default address should be
 - http://localhost:3000/
 
 
-Also included is a script file, script.js, in the test folder, that is meant to be run with Mocha.
+Also included is a script file, script.js, now located in the root folder, that is meant to be run with Mocha.
+
+The app server must not be running, before you run the script. The script will start its own node.js server, and then run its tests, then end its own process.
 
 Suggested command is 
 

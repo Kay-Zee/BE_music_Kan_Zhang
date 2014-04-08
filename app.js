@@ -87,7 +87,6 @@ function startup (err) {
 	
  // Added functionality for client
 	app.get('/recommendations', routes.recommend(db));
-	app.get('/reset', routes.reset(db));
 	app.post('/follow', routes.follow(db));
 	app.post('/listen', routes.listen(db));
 	
