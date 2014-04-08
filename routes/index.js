@@ -318,7 +318,7 @@ exports.follow = function(db){
 			}
 			res.statusCode=200;
 		} catch(e){
-			follow = {error:true};
+			follow = {"error":true};
 			res.statusCode=500;
 			console.log(e);
 		}
@@ -359,7 +359,7 @@ exports.listen = function(db){
 			}
 			res.statusCode=200;
 		} catch (e){
-			listen = {error:true};
+			listen = {"error":true};
 			console.log(e);
 			res.statusCode=500;
 		}

@@ -9,7 +9,7 @@
     "express": "3.5.1",
     "mongodb": "*",
     "mocha": "*",
-	"response": "*"
-	
+	"request": "*",
+	"async": "*"
   }
 }
