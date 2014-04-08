@@ -35,6 +35,9 @@ exports.index = function(req, res){
  */
 exports.recommend = function(db){
 	return function(req, res){
+		// Setup header
+		res.setHeader("Content-Type", "application/json");
+		
 		var user = req.query.user;
 		// Check if user key exists, if not, return
 		if (!user){
@@ -199,7 +202,7 @@ exports.recommend = function(db){
 							if (printToConsole)
 								console.log (musicList);
 							res.statusCode=200;
-							res.setHeader("Content-Type", "application/json");
+
 							res.end(JSON.stringify({list:musicList}));
 						});
 					});
@@ -217,7 +220,6 @@ exports.recommend = function(db){
 					if (printToConsole)
 						console.log (musicList);
 					res.statusCode=200;
-					res.setHeader("Content-Type", "application/json");
 					res.end(JSON.stringify({list:musicList}));
 				}
 			}
@@ -321,7 +323,8 @@ exports.follow = function(db){
 			console.log(e);
 		}
 		// Finish creating response
-		res.end('Recieved follow command with JSON:' + JSON.stringify(follow)+'\n');
+		// Since there was no specified response for this command, I simply echoed the input json
+		res.end(JSON.stringify(follow));
 	};
 };
 
@@ -335,7 +338,6 @@ exports.follow = function(db){
 exports.listen = function(db){
 	return function(req, res){
 		
-		res.header('Access-Control-Allow-Origin', '*');
 		res.setHeader("Content-Type", "application/json");
 		
 		if (printToConsole)
@@ -362,6 +364,7 @@ exports.listen = function(db){
 			res.statusCode=500;
 		}
 		// Finish creating response
-		res.end('Recieved listen command with JSON:' + JSON.stringify(listen)+'\n');
+		// Since there was no specified response for this command, I simply echoed the input json
+		res.end(JSON.stringify(listen));
 	};
 };
