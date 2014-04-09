@@ -2,30 +2,28 @@
 /*
  * User Model
  */
+var mongoose = require('mongoose');
+var db = mongoose.connection;
+var Music = require('mongoose').model('Music');
 
  var User = function(){
-	var user ={};
-	var _follow = function(){};
-	var _listen = function(){};
-	var _setId = function(_user, callback){
-		if (_user._id){
-			user._id = _user._id; 
-		}
-		if (_user.listened){
-			user.listened = _user.listened; 
-		}
-		callback(null);
-	};
-	var _getId = function(){
-
-		return user._id;
-	};
+	var userSchema = mongoose.Schema({
+		_id : String,
+		listened : {type : Array, "default" : [] },
+		following : {type : Array, "default" : [] }
+		
+	});
 	
-	return {
-		setId : _setId,
-		getId : _getId
+	userSchema.methods.usersIFollow = function(callback){
+		return this.model('user').find({_id: {$in:this.following}}, callback);
 	}
 	
- }();
+	userSchema.methods.musicIListenedTo = function(){
+		return Music.find({_id: {$in:this.listened}}, callback);
+	}
+	
+	return mongoose.model('User', userSchema);
+	
+ };
 
-module.exports = User;
+module.exports = new User();

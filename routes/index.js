@@ -9,6 +9,7 @@
  */
  
 var fs = require('fs');
+var musicModel = require('../models/music.js');
 var userModel = require('../models/user.js');
  
 // Name of collections
@@ -77,11 +78,6 @@ exports.recommend = function(db){
 		// Gets all musics that user has listened to, and then gives a score to the tags of those songs
 		function GetMusics(err, item){
 			userMusic = item;
-			userModel.setId(item, function(err){
-				if (!err){
-					console.log('the user in the model is '+userModel.getId());
-				}
-			});
 			
 			if (printToConsole)
 				console.log(userMusic);
@@ -116,6 +112,7 @@ exports.recommend = function(db){
 		function GetGenreRankings(err){
 			// Check if the user is following anyone
 			if (userFollowing){
+			console.log(userFollowing);
 				var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
 					// Generate set of music that users followees have listened to
 					var followeeListenedMusic = {};

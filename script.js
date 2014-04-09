@@ -105,7 +105,7 @@ describe('Fictional MVP', function() {
 		// Build array of requests to be sent to server, and store in array
 		var followsRequests =[];
 		for (var i = 0; i<followsJSON.operations.length; i++){
-			var body = {from:followsJSON.operations[i][0], to:followsJSON.operations[i][1]};
+			followsRequests.push({from:followsJSON.operations[i][0], to:followsJSON.operations[i][1]});
 		}
 		// Execute requests, calling done when all requests are finished
 		async.each(followsRequests, SendRequest, done);
