@@ -115,7 +115,7 @@ describe('Fictional MVP', function() {
   describe('#Recommendations', function() {
     it('Executes the follow command with the provided JSON', function(done){
 		// Setup Options JSON for the requests to be sent
-		options.uri = baseURI+'recommendations?user=a';
+		options.uri = baseURI+'recommendations?user=e';
 		options.method = 'GET';
 		options.headers={'Content-Type': 'application/json'};
 		

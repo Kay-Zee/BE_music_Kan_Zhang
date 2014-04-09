@@ -20,11 +20,6 @@ var scoreLevel2 = 5;
 
 var printToConsole = true;
 
-exports.index = function(req, res){
-  res.end(JSON.stringify({
-  title : "Title"}));
-};
-
 
 /* 
  * Recommendations command (.../recommendations)
@@ -51,57 +46,57 @@ exports.recommend = function(db){
 		// If user exists, initialize variables
 		var rankings = {};
 		var recommendedMusics = [];
-		
-		var userFollowing;
+		var randomCounter = 0;
 		var currentUser;
 		
 		// Find the user with the given id
 		userModel.findOne({_id:user}, function (err, item){
 			if (err || !item){
 				console.log ("No such user");
-				return;
-			}
-			currentUser = item;
-			if (printToConsole)
-				console.log("\nUser Info: \n" + item);
-				
-			// Generates the ranking object
-			async.series([
-			// Generates ranking based on music the user has listened to
-			function(callback){
-				item.musicIListenedTo(function (err, myMusics){
-					if (printToConsole)
-						console.log("\nUsers Musics: \n" + myMusics);
-						
-					rankings = GenerateRankings(myMusics, rankings, scoreLevel1);
+				console.log (recommendedMusics);
+				ReturnList(err);
+			} else {
+				currentUser = item;
+				if (printToConsole)
+					console.log("\nUser Info: \n" + item);
 					
-					callback(err);
-				});
-			},
-			// Generates ranking based on music the users followees has listened to
-			function(callback){
-				item.musicMyFolloweesListenTo(function (err, followeeMusics){
-					if (printToConsole)
-						console.log("\nUsers Followees Musics: \n" + followeeMusics);
+				// Generates the ranking object
+				async.series([
+				// Generates ranking based on music the user has listened to
+				function(callback){
+					item.musicIListenedTo(function (err, myMusics){
+						if (printToConsole)
+							console.log("\nUsers Musics: \n" + myMusics);
+							
+						rankings = GenerateRankings(myMusics, rankings, scoreLevel1);
 						
-					rankings = GenerateRankings(followeeMusics, rankings, scoreLevel2);
-					
-					callback(err);
-				});
-			}
-			], 
-			// Called after above two are finished
-			// Finds the music that matches the given tags and then runs RankMusics with those musics
-			function(err){
-				var queryGenres =[];
-				for (var tag in rankings){
-					queryGenres.push(tag);
+						callback(err);
+					});
+				},
+				// Generates ranking based on music the users followees has listened to
+				function(callback){
+					item.musicMyFolloweesListenTo(function (err, followeeMusics){
+						if (printToConsole)
+							console.log("\nUsers Followees Musics: \n" + followeeMusics);
+							
+						rankings = GenerateRankings(followeeMusics, rankings, scoreLevel2);
+						
+						callback(err);
+					});
 				}
-				musicModel.find({tags:{$in:queryGenres}}, RankMusics);
-			});
-			
+				], 
+				// Called after above two are finished
+				// Finds the music that matches the given tags and then runs RankMusics with those musics
+				function(err){
+					var queryGenres =[];
+					for (var tag in rankings){
+						queryGenres.push(tag);
+					}
+					musicModel.find({tags:{$in:queryGenres}}, RankMusics);
+				});
+			}
 		});	
-
+	
 		
 		// Ranks all music (items) based on previously calculated rankings of its "tags" or "genres" and inserts them into a sorted list
 		function RankMusics(err, items){
@@ -121,40 +116,22 @@ exports.recommend = function(db){
 					recommendedMusics = InsertIntoSorted(recommendedMusics,currentMusic, currentUser.listened);
 					//recommendedMusics.push(currentMusic);
 				}
-				// If after the algorithm, not enough songs have been added to the list, randomly add songs
-				if (recommendedMusics.length<5){
-					
-					musicModel.count(function(err, count){
-						
-						var randMusics = musicModel.find().limit( 5 - recommendedMusics.length ).skip( Math.random() * (count-(5 - recommendedMusics.length)), function(err, items){
-							// Match formatting of other musics, and add to list
-							for (var i = 0; i<items.length; i++){
-								var currentMusic = {_id:items[i]._id,score:0};
-								recommendedMusics.push(currentMusic);
-							}
-							if (printToConsole){
-								console.log ("Recommended Musics:");
-								console.log (recommendedMusics);
-							}
-							// Forming list in correct format
-							var musicList = [];
-							for (var i = 0; i<recommendedMusics.length; i++){
-								musicList.push(recommendedMusics[i]._id);
-							}
-							if (printToConsole)
-								console.log (musicList);
-							res.statusCode=200;
 
-							res.end(JSON.stringify({list:musicList}));
-						});
-					});
-					
-				} else {
-					// If there are enough songs, simply return list in proper format
+				// If there are enough songs, simply return list in proper format
+				ReturnList(err);
+				
+			}
+		}
+		
+		function ReturnList(err){
+			console.log (recommendedMusics);
+			if(!err){
+				if (recommendedMusics.length==5 || randomCounter>10){
 					if (printToConsole){
-						console.log ("Recommended Musics:");
+						console.log ("\nRecommended Musics: \n");
 						console.log (recommendedMusics);
 					}
+				
 					var musicList = [];
 					for (var i = 0; i<recommendedMusics.length; i++){
 						musicList.push(recommendedMusics[i]._id);
@@ -163,6 +140,23 @@ exports.recommend = function(db){
 						console.log (musicList);
 					res.statusCode=200;
 					res.end(JSON.stringify({list:musicList}));
+				} else if (recommendedMusics.length<5){
+					// If after the algorithm, not enough songs have been added to the list, randomly add songs
+					console.log ("Searching for a random song");
+					musicModel.count(function(err, count){
+						console.log("count " + count);
+						musicModel.findOne().limit(5).skip( Math.random() * (count)).exec(function(err, item){
+							// Match formatting of other musics, and add to list
+							
+							var currentMusic = {_id:item._id,score:0};
+							if (recommendedMusics.length<5)
+								recommendedMusics = InsertIntoSorted(recommendedMusics,currentMusic, []);
+							
+							randomCounter++;
+							ReturnList(err);
+						});
+					});
+					
 				}
 			}
 		}
@@ -197,7 +191,11 @@ exports.recommend = function(db){
  *  Returns true if item is inserted and false otherwise
  */
 function InsertIntoSorted(recommendedMusics, currentMusic, excludedMusics){
-	if (ListContains(excludedMusics, currentMusic._id)){
+	var recommendedMusicList = [];
+	for (var i = 0; i<recommendedMusics.length; i++){
+		recommendedMusicList.push(recommendedMusics[i]._id);
+	}
+	if (ListContains(excludedMusics, currentMusic._id) || ListContains(recommendedMusicList, currentMusic._id)){
 		// If user has heard song already, do not add to recommendations
 		return recommendedMusics;
 	} else if (recommendedMusics.length===0){
