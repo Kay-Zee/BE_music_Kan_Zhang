@@ -126,7 +126,9 @@ exports.recommend = function(db){
 		function ReturnList(err){
 			console.log (recommendedMusics);
 			if(!err){
+				
 				if (recommendedMusics.length==5 || randomCounter>10){
+					// Return the list if it is big enough or if there has been too many randoms
 					if (printToConsole){
 						console.log ("\nRecommended Musics: \n");
 						console.log (recommendedMusics);
@@ -139,6 +141,7 @@ exports.recommend = function(db){
 					if (printToConsole)
 						console.log (musicList);
 					res.statusCode=200;
+					// Return
 					res.end(JSON.stringify({list:musicList}));
 				} else if (recommendedMusics.length<5){
 					// If after the algorithm, not enough songs have been added to the list, randomly add songs
@@ -153,6 +156,7 @@ exports.recommend = function(db){
 								recommendedMusics = InsertIntoSorted(recommendedMusics,currentMusic, []);
 							
 							randomCounter++;
+							// Call self to see if list is large enough to be returned yet
 							ReturnList(err);
 						});
 					});
