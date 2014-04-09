@@ -2,16 +2,20 @@
 /**
  * Module dependencies.
  */
-
+//Connect to the db
+var mongoose = require('mongoose');
+var db = require('./models/db');
+var musicModel = require('mongoose').model('Music');
+var userModel = require('mongoose').model('User');
+ 
 var express = require('express');
 var routes = require('./routes');
 var user = require('./routes/user');
 var http = require('http');
 var path = require('path');
 var fs = require('fs');
-//Connect to the db
-var mongoose = require('mongoose');
-var db = require('./models/db');
+
+
 
 // Mongo DB
 var MongoClient = require('mongodb').MongoClient;
@@ -60,6 +64,7 @@ function resetdb(callback){
 							console.log(err);
 						}
 					});
+					new musicModel(doc);
 				}
 				console.log(musics);
 

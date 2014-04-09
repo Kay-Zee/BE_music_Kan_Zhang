@@ -28,6 +28,7 @@ process.on('SIGINT', function() {
 /*
  * Schemas & Models
  */
+ require('./music');
 require('./user');
 
 module.exports = db;

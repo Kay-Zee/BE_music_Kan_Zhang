@@ -9,8 +9,9 @@
  */
  
 var fs = require('fs');
-var musicModel = require('../models/music.js');
-var userModel = require('../models/user.js');
+var musicModel = require('mongoose').model('Music');
+var userModel = require('mongoose').model('User');
+var async = require('async');
  
 // Name of collections
 var followingCollectionName = 'following';
@@ -46,15 +47,14 @@ exports.recommend = function(db){
 		// Check if user key exists, if not, return
 		if (!user){
 			// Was considering returning 5 random songs here
-			
 			return false;
 		}
-		
 		
 		if (printToConsole)
 			console.log(user);
 		// If user exists, initialize variables
 		var rankings = {};
+		var rankingsM = {};
 		var recommendedMusics = [];
 		
 		var followColl = db.collection(followingCollectionName);
@@ -75,6 +75,38 @@ exports.recommend = function(db){
 			
 		});
 		
+		userModel.findOne({_id:user}, function (err, item){
+			if (printToConsole)
+				console.log("USING MONGOOSE" + item);
+			async.series([
+			function(callback){
+				item.musicIListenedTo(function (err, myMusics){
+					if (printToConsole)
+						console.log("USING MONGOOSE MY MUSIC" + myMusics);
+						
+					rankingsM = GenerateRankings(myMusics, rankingsM, scoreLevel1);
+					callback(err);
+				});
+			},
+			function(callback){
+				item.musicMyFolloweesListenTo(function (err, followeeMusics){
+					if (printToConsole)
+						console.log("USING MONGOOSE FOLLOWEE MUSIC" + followeeMusics);
+						
+					rankingsM = GenerateRankings(followeeMusics, rankingsM, scoreLevel2);
+					
+					callback(err);
+				});
+			}
+			], 
+			// Called after above two are finished
+			function(err){
+				console.log("ASDFASDFSFASDFASD");
+			});
+			
+		});	
+		
+
 		// Gets all musics that user has listened to, and then gives a score to the tags of those songs
 		function GetMusics(err, item){
 			userMusic = item;
@@ -85,19 +117,7 @@ exports.recommend = function(db){
 			if (!err && item){
 				// Retrieving all songs user has listened to
 				var userListened = musicColl.find({_id: {$in:userMusic.listened}}).toArray(function(err,items){
-					if (printToConsole)
-						console.log(items);
-					// Assign rank/score to the items, users scoreLevel1 since it is the songs user has listened to
-					for (var i = 0; i<items.length; i++){
-						for (var j = 0; j<items[i].tags.length; j++){
-							if (rankings[items[i].tags[j]]){
-								rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + scoreLevel1;
-							} else {
-								rankings[items[i].tags[j]] = scoreLevel1;
-							}
-						}
-					}
-					// Continue assigning rank/score by calling the Genre ranking generation function
+					rankings = GenerateRankings(items, rankings, scoreLevel1);
 					GetGenreRankings(err);
 				});
 			} else {
@@ -230,6 +250,10 @@ exports.recommend = function(db){
 					res.statusCode=200;
 					res.end(JSON.stringify({list:musicList}));
 				}
+				console.log ("rankA : ");
+				console.log(rankings);
+				console.log ("rankM : ");
+				console.log(rankingsM);
 			}
 		}
 		
@@ -293,6 +317,28 @@ exports.recommend = function(db){
 	};
 };
 
+/* 
+ * Generate Rankings
+ * Helper Function
+ */
+ function GenerateRankings(items, rankings, score){
+	if (printToConsole)
+		console.log(items);
+	// Assign rank/score to the items, users scoreLevel1 since it is the songs user has listened to
+		if (items){
+		for (var i = 0; i<items.length; i++){
+			for (var j = 0; j<items[i].tags.length; j++){
+				if (rankings[items[i].tags[j]]){
+					rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + score;
+				} else {
+					rankings[items[i].tags[j]] = score;
+				}
+			}
+		}
+	}
+	return rankings;
+}
+
 
 
 /* 
@@ -319,6 +365,11 @@ exports.follow = function(db){
 			
 			if (follow.from && follow.to){
 				followColl.update({_id:follow.from}, {$addToSet:{following:follow.to}},  {upsert:true}, function(err, result) {
+					if (err){
+						console.log(err);
+					}
+				});
+				userModel.update({_id:follow.from}, {$addToSet:{following:follow.to}},  {upsert:true}, function(err, result) {
 					if (err){
 						console.log(err);
 					}
@@ -360,6 +411,11 @@ exports.listen = function(db){
 			//  add only if it does not already exist
 			if (listen.user && listen.music){
 				listenColl.update({_id:listen.user}, {$addToSet:{listened:listen.music}},  {upsert:true}, function(err, result) {
+					if (err){
+						console.log(err);
+					}
+				});
+				userModel.update({_id:listen.user}, {$addToSet:{listened:listen.music}},  {upsert:true}, function(err, result) {
 					if (err){
 						console.log(err);
 					}
