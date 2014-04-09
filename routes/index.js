@@ -13,10 +13,6 @@ var musicModel = require('mongoose').model('Music');
 var userModel = require('mongoose').model('User');
 var async = require('async');
  
-// Name of collections
-var followingCollectionName = 'following';
-var listenCollectionName = 'listen';
-var musicCollectionName = 'musics';
 
 // Score values: Level1 = user listened musics, Level2 = followee listened musics
 var scoreLevel1 = 10;
@@ -54,141 +50,58 @@ exports.recommend = function(db){
 			console.log(user);
 		// If user exists, initialize variables
 		var rankings = {};
-		var rankingsM = {};
 		var recommendedMusics = [];
 		
-		var followColl = db.collection(followingCollectionName);
-		var musicColl = db.collection(musicCollectionName);
-		var listenColl = db.collection(listenCollectionName);
-		
 		var userFollowing;
-		var userMusic;
+		var currentUser;
 		
-		// Get all users that the current user is following
-		followColl.findOne({_id:user}, function (err, item){
-			if (printToConsole)
-				console.log(item);
-			
-			userFollowing = item;
-			
-			listenColl.findOne({_id:user}, GetMusics);
-			
-		});
-		
+		// Find the user with the given id
 		userModel.findOne({_id:user}, function (err, item){
+			if (err || !item){
+				console.log ("No such user");
+				return;
+			}
+			currentUser = item;
 			if (printToConsole)
-				console.log("USING MONGOOSE" + item);
+				console.log("\nUser Info: \n" + item);
+				
+			// Generates the ranking object
 			async.series([
+			// Generates ranking based on music the user has listened to
 			function(callback){
 				item.musicIListenedTo(function (err, myMusics){
 					if (printToConsole)
-						console.log("USING MONGOOSE MY MUSIC" + myMusics);
+						console.log("\nUsers Musics: \n" + myMusics);
 						
-					rankingsM = GenerateRankings(myMusics, rankingsM, scoreLevel1);
+					rankings = GenerateRankings(myMusics, rankings, scoreLevel1);
+					
 					callback(err);
 				});
 			},
+			// Generates ranking based on music the users followees has listened to
 			function(callback){
 				item.musicMyFolloweesListenTo(function (err, followeeMusics){
 					if (printToConsole)
-						console.log("USING MONGOOSE FOLLOWEE MUSIC" + followeeMusics);
+						console.log("\nUsers Followees Musics: \n" + followeeMusics);
 						
-					rankingsM = GenerateRankings(followeeMusics, rankingsM, scoreLevel2);
+					rankings = GenerateRankings(followeeMusics, rankings, scoreLevel2);
 					
 					callback(err);
 				});
 			}
 			], 
 			// Called after above two are finished
+			// Finds the music that matches the given tags and then runs RankMusics with those musics
 			function(err){
-				console.log("ASDFASDFSFASDFASD");
-			});
-			
-		});	
-		
-
-		// Gets all musics that user has listened to, and then gives a score to the tags of those songs
-		function GetMusics(err, item){
-			userMusic = item;
-			
-			if (printToConsole)
-				console.log(userMusic);
-			// Check that there is no error, and that the user actually exists
-			if (!err && item){
-				// Retrieving all songs user has listened to
-				var userListened = musicColl.find({_id: {$in:userMusic.listened}}).toArray(function(err,items){
-					rankings = GenerateRankings(items, rankings, scoreLevel1);
-					GetGenreRankings(err);
-				});
-			} else {
-				// Was considering returning 5 random songs here
-
-				return false;
-			}
-
-			
-		}
-		// Gives rankings to the tags based on who the user is following, and then finds all songs corrosponding to those tags
-		function GetGenreRankings(err){
-			// Check if the user is following anyone
-			if (userFollowing){
-			console.log(userFollowing);
-				var followeeMusic = listenColl.find({_id: {$in:userFollowing.following}}).toArray(function(err,items){
-					// Generate set of music that users followees have listened to
-					var followeeListenedMusic = {};
-					for (var i = 0; i< items.length; i++){
-						for (var j = 0; j< items[i].listened.length; j++){
-							followeeListenedMusic[items[i].listened[j]]=true;
-						}
-					}
-					var musics = [];
-					for (var key in followeeListenedMusic){
-						musics.push(key);
-					}
-					if (printToConsole){
-						console.log("Music listened by Followees");
-						console.log(items);
-						console.log(musics);
-					}
-					// Modify rankings based on the music the users followees have listened to
-					// Note that duplicate music does not increase score given. i.e. if both a and b lisened to m1, the genres in m1 only gets counted once
-					// To count songs more than once, another layer of loop has to be added to traverse each followee's songs
-					musicColl.find({_id: {$in:musics}}).toArray(function(err,items){
-						if (printToConsole){
-							console.log("All Music Listened to by Followees and their tags");
-							console.log(items);
-						}
-						for (var i = 0; i<items.length; i++){
-							for (var j = 0; j<items[i].tags.length; j++){
-								if (rankings[items[i].tags[j]]){
-									rankings[items[i].tags[j]] = rankings[items[i].tags[j]] + scoreLevel2;
-								} else {
-									rankings[items[i].tags[j]] = scoreLevel2;
-								}
-							}
-						}
-						
-						// Find all songs with relevant genres, and then pass them to RankMusics
-						var queryGenres =[];
-						for (var tag in rankings){
-							queryGenres.push(tag);
-						}
-						
-						musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
-					});
-					
-				});
-			} else {
-				// If the user has no followees, rank music without looking up followees 
 				var queryGenres =[];
 				for (var tag in rankings){
 					queryGenres.push(tag);
 				}
-				
-				musicColl.find({tags:{$in:queryGenres}}).toArray(RankMusics);
-			}
+				musicModel.find({tags:{$in:queryGenres}}, RankMusics);
+			});
 			
-		}
+		});	
+
 		
 		// Ranks all music (items) based on previously calculated rankings of its "tags" or "genres" and inserts them into a sorted list
 		function RankMusics(err, items){
@@ -205,15 +118,15 @@ exports.recommend = function(db){
 					}
 					
 					// Insert into a sorted array,
-					InsertIntoSorted(recommendedMusics,currentMusic);
+					recommendedMusics = InsertIntoSorted(recommendedMusics,currentMusic, currentUser.listened);
 					//recommendedMusics.push(currentMusic);
 				}
 				// If after the algorithm, not enough songs have been added to the list, randomly add songs
 				if (recommendedMusics.length<5){
 					
-					musicColl.count(function(err, count){
+					musicModel.count(function(err, count){
 						
-						var randMusics = musicColl.find().limit( 5 - recommendedMusics.length ).skip( Math.random() * (count-(5 - recommendedMusics.length)) ).toArray(function(err, items){
+						var randMusics = musicModel.find().limit( 5 - recommendedMusics.length ).skip( Math.random() * (count-(5 - recommendedMusics.length)), function(err, items){
 							// Match formatting of other musics, and add to list
 							for (var i = 0; i<items.length; i++){
 								var currentMusic = {_id:items[i]._id,score:0};
@@ -223,6 +136,7 @@ exports.recommend = function(db){
 								console.log ("Recommended Musics:");
 								console.log (recommendedMusics);
 							}
+							// Forming list in correct format
 							var musicList = [];
 							for (var i = 0; i<recommendedMusics.length; i++){
 								musicList.push(recommendedMusics[i]._id);
@@ -250,70 +164,8 @@ exports.recommend = function(db){
 					res.statusCode=200;
 					res.end(JSON.stringify({list:musicList}));
 				}
-				console.log ("rankA : ");
-				console.log(rankings);
-				console.log ("rankM : ");
-				console.log(rankingsM);
 			}
 		}
-		
-		/*
-		 * Insert into a sorted array songs
-		 *  Helper function, only keeps 5 items with the highest score, sorted
-		 *  Returns true if item is inserted and false otherwise
-		 */
-		function InsertIntoSorted(recommendedMusics, currentMusic){
-			if (ListContains(userMusic.listened, currentMusic._id)){
-				// If user has heard song already, do not add to recommendations
-				return false;
-			} else if (recommendedMusics.length===0){
-				// Add if list is empty and user has not listened to music before 
-				recommendedMusics.push(currentMusic);
-			} else {
-				var index = -1;
-				// Could consider changing this to a while loop, to decrease total number of iterations
-				for (var i = 0; i<recommendedMusics.length;i++){
-					if (currentMusic.score>recommendedMusics[i].score && index < 0){
-						index = i;
-					}
-				}
-				// Inserts into a sorted list based on score
-				if (index === 0){
-					// If new music has largest score, insert into front
-					recommendedMusics.unshift(currentMusic);
-				} else if (index>0){
-					// Otherwise, splice into correct position
-					recommendedMusics.splice((index), 0, currentMusic);
-				} else if (recommendedMusics.length<5){
-					// If element was not bigger than any already in array, push onto end if array length < 5
-					recommendedMusics.push(currentMusic);
-				} else {
-					return false;
-				}
-			}
-			// If array has been inserted into, it may be larger than the needed 5. Pop off unecessary element
-			if (recommendedMusics.length>5){
-				recommendedMusics.pop();
-			}
-			return true;
-		}
-		
-		/*
-		 * Check if list contains obj
-		 *  Helper Function
-		 *  Returns true if item is found, false otherwise
-		 */
-		function ListContains(list, obj){
-			for (var i = 0; i < list.length; i++) {
-				if (list[i] === obj) {
-					return true;
-				}
-			}
-			return false;
-		}
-		
-		
-		
 	};
 };
 
@@ -339,6 +191,61 @@ exports.recommend = function(db){
 	return rankings;
 }
 
+/*
+ * Insert into a sorted array songs
+ *  Helper function, only keeps 5 items with the highest score, sorted
+ *  Returns true if item is inserted and false otherwise
+ */
+function InsertIntoSorted(recommendedMusics, currentMusic, excludedMusics){
+	if (ListContains(excludedMusics, currentMusic._id)){
+		// If user has heard song already, do not add to recommendations
+		return recommendedMusics;
+	} else if (recommendedMusics.length===0){
+		// Add if list is empty and user has not listened to music before 
+		recommendedMusics.push(currentMusic);
+	} else {
+		var index = -1;
+		// Could consider changing this to a while loop, to decrease total number of iterations
+		for (var i = 0; i<recommendedMusics.length;i++){
+			if (currentMusic.score>recommendedMusics[i].score && index < 0){
+				index = i;
+			}
+		}
+		// Inserts into a sorted list based on score
+		if (index === 0){
+			// If new music has largest score, insert into front
+			recommendedMusics.unshift(currentMusic);
+		} else if (index>0){
+			// Otherwise, splice into correct position
+			recommendedMusics.splice((index), 0, currentMusic);
+		} else if (recommendedMusics.length<5){
+			// If element was not bigger than any already in array, push onto end if array length < 5
+			recommendedMusics.push(currentMusic);
+		} else {
+			return recommendedMusics;
+		}
+	}
+	// If array has been inserted into, it may be larger than the needed 5. Pop off unecessary element
+	if (recommendedMusics.length>5){
+		recommendedMusics.pop();
+	}
+	return recommendedMusics;
+}
+
+/*
+ * Check if list contains obj
+ *  Helper Function
+ *  Returns true if item is found, false otherwise
+ */
+function ListContains(list, obj){
+	for (var i = 0; i < list.length; i++) {
+		if (list[i] === obj) {
+			return true;
+		}
+	}
+	return false;
+}
+
 
 
 /* 
@@ -360,15 +267,9 @@ exports.follow = function(db){
 		// Try catch block for when I had to parse the request body, but should now be done by express
 		try{
 			follow = req.body;//JSON.parse(req.body.content);
-			var followColl = db.collection(followingCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 			
 			if (follow.from && follow.to){
-				followColl.update({_id:follow.from}, {$addToSet:{following:follow.to}},  {upsert:true}, function(err, result) {
-					if (err){
-						console.log(err);
-					}
-				});
 				userModel.update({_id:follow.from}, {$addToSet:{following:follow.to}},  {upsert:true}, function(err, result) {
 					if (err){
 						console.log(err);
@@ -406,15 +307,9 @@ exports.listen = function(db){
 		// Try catch block for when I had to parse the request body, but should now be done by express
 		try{
 			listen = req.body; //JSON.parse(req.body);
-			var listenColl = db.collection(listenCollectionName);
 			// Add follow relationship to the "following" collection such that _id is the user and following is who that user is following
 			//  add only if it does not already exist
 			if (listen.user && listen.music){
-				listenColl.update({_id:listen.user}, {$addToSet:{listened:listen.music}},  {upsert:true}, function(err, result) {
-					if (err){
-						console.log(err);
-					}
-				});
 				userModel.update({_id:listen.user}, {$addToSet:{listened:listen.music}},  {upsert:true}, function(err, result) {
 					if (err){
 						console.log(err);

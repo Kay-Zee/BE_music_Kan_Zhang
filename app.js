@@ -58,13 +58,12 @@ function resetdb(callback){
 				// Insert all music into database with the ID as _id and the tag array as tags
 
 				for (var key in musics) {
-				   var doc = {'_id':key, 'tags':musics[key]};
-				   collection.insert(doc, {w:1}, function(err, result) {
-						if (err){
-							console.log(err);
-						}
+					var doc = {'_id':key, 'tags':musics[key]};
+					var newMusic = new musicModel(doc);
+					newMusic.save(function(err){
+						if (err)
+							console.log("Could not save music : " + doc);
 					});
-					new musicModel(doc);
 				}
 				console.log(musics);
 
