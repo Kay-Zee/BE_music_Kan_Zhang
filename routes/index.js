@@ -9,6 +9,7 @@
  */
  
 var fs = require('fs');
+var userModel = require('../models/user.js');
  
 // Name of collections
 var followingCollectionName = 'following';
@@ -47,6 +48,8 @@ exports.recommend = function(db){
 			
 			return false;
 		}
+		
+		
 		if (printToConsole)
 			console.log(user);
 		// If user exists, initialize variables
@@ -74,6 +77,12 @@ exports.recommend = function(db){
 		// Gets all musics that user has listened to, and then gives a score to the tags of those songs
 		function GetMusics(err, item){
 			userMusic = item;
+			userModel.setId(item, function(err){
+				if (!err){
+					console.log('the user in the model is '+userModel.getId());
+				}
+			});
+			
 			if (printToConsole)
 				console.log(userMusic);
 			// Check that there is no error, and that the user actually exists

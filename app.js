@@ -9,7 +9,9 @@ var user = require('./routes/user');
 var http = require('http');
 var path = require('path');
 var fs = require('fs');
-
+//Connect to the db
+var mongoose = require('mongoose');
+var db = require('./models/db');
 
 // Mongo DB
 var MongoClient = require('mongodb').MongoClient;
@@ -36,63 +38,65 @@ app.get('/', routes.index);
 app.get('/users', user.list);
 
 
-//Connect to the db
-var db;
+
 var server;
 /*
  * Resets the database
  */
 function resetdb(callback){
 	if(db){
-		db.dropDatabase(function(err, database) {
-			var collection = db.collection('musics');
-			// Read Music collection from json file on server start up
-			var content = fs.readFileSync('./test/musics.json');
-			var musics = JSON.parse(content);
-			// Insert all music into database with the ID as _id and the tag array as tags
+		db.once('open',function(){
+			db.db.dropDatabase(function(err) {
+				var collection = db.collection('musics');
+				// Read Music collection from json file on server start up
+				var content = fs.readFileSync('./test/musics.json');
+				var musics = JSON.parse(content);
+				// Insert all music into database with the ID as _id and the tag array as tags
 
-			for (var key in musics) {
-			   var doc = {'_id':key, 'tags':musics[key]};
-			   collection.insert(doc, {w:1}, function(err, result) {
-					if (err){
-						console.log(err);
-					}
-				});
-			}
-			console.log(musics);
+				for (var key in musics) {
+				   var doc = {'_id':key, 'tags':musics[key]};
+				   collection.insert(doc, {w:1}, function(err, result) {
+						if (err){
+							console.log(err);
+						}
+					});
+				}
+				console.log(musics);
 
-			console.log("musics.json read into db");
-			callback(err);
+				console.log("musics.json read into db");
+				callback(err);
+			});
 		});
 	} else {
+	console.log("no db connection");
 		callback(null)
 	}
 };
 exports.resetdb = resetdb;
-MongoClient.connect("mongodb://localhost:27017/BE_music_db", function(err, database) {
-	if(!err) {
-		console.log("We are connected");
-		db = database;
-		resetdb(startup);
+
+/*
+// This resets the database when the server starts up, can be removed if we want previouse information be persist
+resetdb(function(err){
+	if (err){
+		console.log("Could not reset the database on server startup");
 	} else {
-	console.log("Error connecting to mongoDB");
+		console.log("Successfully reset the database on server startup");
 	}
-  
+});
+*/
+
+// Added functionality for client
+app.get('/recommendations', routes.recommend(db));
+app.post('/follow', routes.follow(db));
+app.post('/listen', routes.listen(db));
+
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+
+server = http.createServer(app).listen(app.get('port'), function(){
+   console.log('Express server listening on port ' + app.get('port'));
 });
 
-function startup (err) {
-	server = http.createServer(app).listen(app.get('port'), function(){
-	   console.log('Express server listening on port ' + app.get('port'));
-	});
-	
- // Added functionality for client
-	app.get('/recommendations', routes.recommend(db));
-	app.post('/follow', routes.follow(db));
-	app.post('/listen', routes.listen(db));
-	
-	process.on('SIGINT', cleanup);
-	process.on('SIGTERM', cleanup);
-}
 
 function cleanup () {
 	server._connections=0;
