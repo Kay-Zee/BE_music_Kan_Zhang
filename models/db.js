@@ -3,6 +3,8 @@ var mongoose = require( 'mongoose' );
 var dbURI = 'mongodb://localhost:27017/BE_music_db';
 mongoose.connect(dbURI);
 var db = mongoose.connection;
+
+// If the connection is successful
 db.on('connected', function () {
   console.log('Mongoose default connection open to ' + dbURI);
 });

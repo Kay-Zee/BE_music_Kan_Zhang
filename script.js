@@ -5,14 +5,17 @@ var async = require('async');
 var path = require('path');
 var fs = require('fs');
 
+// Will launch the server in preperation for the tests
 var app = require('./app.js');
 var baseURI = 'http://localhost:3000/';
+// user field for the recommendations query, will be used as follows /recommendations?user=<userToQuery>
+var userToQuery = 'a';
 
 // Base options object for requests
 var options = { method: 'POST'
   , uri: baseURI
   , headers: { 'Content-Type': 'application/json' , 'Accept': 'application/json' }
-  , json: { "content":"content" }
+  , json: {}
 };
 
 /**
@@ -21,7 +24,9 @@ var options = { method: 'POST'
  * 
  */
 function SendRequest(item, callback){
+	// Attach JSON
 	options.json=item;
+	
 	request(options, function(err, res, body){
 		HandleResponse(err, res, body);
 		callback(err);
@@ -116,7 +121,7 @@ describe('Fictional MVP', function() {
   describe('#Recommendations', function() {
     it('Executes the follow command with the provided JSON', function(done){
 		// Setup Options JSON for the requests to be sent
-		options.uri = baseURI+'recommendations?user=a';
+		options.uri = baseURI+'recommendations?user='+userToQuery;
 		options.method = 'GET';
 		options.headers={'Content-Type': 'application/json'};
 		
