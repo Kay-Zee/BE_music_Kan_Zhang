@@ -9,15 +9,11 @@ var musicModel = require('mongoose').model('Music');
 var userModel = require('mongoose').model('User');
  
 var express = require('express');
-var routes = require('./routes');
+var recommendations = require('./routes/recommendations');
+var events = require('./routes/events');
 var http = require('http');
 var path = require('path');
 var fs = require('fs');
-
-
-
-// Mongo DB
-var MongoClient = require('mongodb').MongoClient;
 
 
 var app = express();
@@ -39,7 +35,7 @@ if ('development' == app.get('env')) {
 
 
 var server;
-/*
+/**
  * Resets the database
  */
 function resetdb(callback){
@@ -84,10 +80,10 @@ resetdb(function(err){
 });
 */
 
-// Added functionality for client
-app.get('/recommendations', routes.recommend(db));
-app.post('/follow', routes.follow(db));
-app.post('/listen', routes.listen(db));
+// Add the three endpoints to the app
+app.get('/recommendations', recommendations.recommend(db));
+app.post('/follow', events.follow(db));
+app.post('/listen', events.listen(db));
 
 process.on('SIGINT', cleanup);
 process.on('SIGTERM', cleanup);

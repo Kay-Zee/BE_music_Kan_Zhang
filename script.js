@@ -2,19 +2,20 @@ var assert = require('assert');
 var express = require('express');
 var request = require('request');
 var async = require('async');
-var http = require('http');
 var path = require('path');
 var fs = require('fs');
 
 var app = require('./app.js');
 var baseURI = 'http://localhost:3000/';
+
+// Base options object for requests
 var options = { method: 'POST'
-  , uri: 'http://localhost:3000/'
+  , uri: baseURI
   , headers: { 'Content-Type': 'application/json' , 'Accept': 'application/json' }
   , json: { "content":"content" }
 };
 
-/*
+/**
  * SendRequest
  * Helper Function/Iterator for async.each
  * 
@@ -28,7 +29,7 @@ function SendRequest(item, callback){
 	
 }
 
-/*
+/**
  * HandleResponse
  * Helper Function for requests
  * 
@@ -115,7 +116,7 @@ describe('Fictional MVP', function() {
   describe('#Recommendations', function() {
     it('Executes the follow command with the provided JSON', function(done){
 		// Setup Options JSON for the requests to be sent
-		options.uri = baseURI+'recommendations?user=e';
+		options.uri = baseURI+'recommendations?user=a';
 		options.method = 'GET';
 		options.headers={'Content-Type': 'application/json'};
 		

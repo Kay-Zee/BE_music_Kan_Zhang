@@ -1,6 +1,7 @@
 {
   "name": "BE_music_Kan_Zhang",
   "version": "0.0.1",
+  "engines": {"node": ">= 0.10.26"},
   "private": true,
   "scripts": {
     "start": "node app.js"
