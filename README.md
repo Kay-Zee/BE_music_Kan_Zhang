@@ -55,7 +55,7 @@ Suggested command is
 
 #####`$ mocha script.js`
 
-Must be in the test folder to run this.
+Must have mocha installed globally to run this.
 
 #### NOTE
 
