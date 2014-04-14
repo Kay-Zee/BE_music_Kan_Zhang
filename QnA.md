@@ -38,6 +38,8 @@ Approximately 3 days, with about 4 hours per day.
 - Day 2 was writing the server logic and implementing algorithms, approx 5 hours.
 - Day 3 was writing the script and polishing up code, 3-4 hours
 
+- About another 12 hours for fixing issues opened after review
+
 Where would be the bottlenecks of this solution you have implemented?
 >
 Picking out all songs that match a the users "tags" and then ranking them, since if the user has listened to many songs, and has many followees, he will have a lot of songs in this category, and even though only 5 needs to be recommended. Each song may also have many tags, which would cause more operations.
