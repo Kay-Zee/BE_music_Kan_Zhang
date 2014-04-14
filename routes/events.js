@@ -25,8 +25,6 @@ var printToConsole = true;
  */
 exports.follow = function(db){
 	return function(req, res){
-		// Define response
-		res.setHeader("Content-Type", "application/json");
 		if (printToConsole)
 			console.log(req.body);
 		// Try to parse and store
@@ -51,7 +49,7 @@ exports.follow = function(db){
 		}
 		// Finish creating response
 		// Since there was no specified response for this command, I simply echoed the input json
-		res.end(JSON.stringify(follow));
+		res.send(follow);
 	};
 };
 
@@ -64,8 +62,6 @@ exports.follow = function(db){
  */
 exports.listen = function(db){
 	return function(req, res){
-		
-		res.setHeader("Content-Type", "application/json");
 		
 		if (printToConsole)
 			console.log(req.body);
@@ -91,6 +87,6 @@ exports.listen = function(db){
 		}
 		// Finish creating response
 		// Since there was no specified response for this command, I simply echoed the input json
-		res.end(JSON.stringify(listen));
+		res.send(listen);
 	};
 };

@@ -29,8 +29,6 @@ var printToConsole = true;
  */
 exports.recommend = function(db){
 	return function(req, res){
-		// Setup header
-		res.setHeader("Content-Type", "application/json");
 		
 		// Retrieve id of user being queried about
 		var user = req.query.user;
@@ -134,7 +132,7 @@ exports.recommend = function(db){
 						console.log (musicList);
 					// Return the response
 					res.statusCode=200;
-					res.end(JSON.stringify({list:musicList}));
+					res.send({list:musicList});
 				} else if (recommendedMusics.length<5){
 					// If after the algorithm, not enough songs have been added to the list, randomly add songs
 					console.log ("Searching for a random song");
@@ -160,7 +158,7 @@ exports.recommend = function(db){
 				console.log (err);
 				// Return the response
 				res.statusCode=500;
-				res.end(JSON.stringify({list:musicList}));
+				res.send({list:musicList});
 			}
 		}
 	};
