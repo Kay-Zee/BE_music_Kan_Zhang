@@ -55,7 +55,14 @@ Suggested command is
 
 #####`$ mocha script.js`
 
-Must have mocha installed globally to run this.
+Must have mocha installed globally to run this. If you do not have mocha installed globally, you can try using one of the two following options
+
+1. `npm test`
+I have linked this script to `mocha script.js` and I believe npm uses the relative mocha module, and not the global version
+
+2. `./node_modules/mocha/bin/mocha script.js`
+To manually use the mocha inside the node_modules folder
+
 
 #### NOTE
 
